@@ -50,6 +50,7 @@ MemoFlash/
 │   ├── vite.config.js
 │   └── package.json
 ├── Dockerfile               # 单一 Docker 镜像（后端 + 前端静态文件）
+├── build.sh                 # 一键构建脚本
 ├── .env.example             # 环境变量示例
 └── README.md
 ```
@@ -261,7 +262,10 @@ npm run build
 
 **Docker 部署：**
 ```bash
-# 构建镜像
+# 使用一键构建脚本
+./build.sh
+
+# 或手动构建
 docker build -t memoflash .
 
 # 运行容器
@@ -274,6 +278,11 @@ docker run -d \
   -e DB_PATH=/app/memos_prod.db \
   memoflash
 ```
+
+`build.sh` 脚本功能：
+- 检查 Docker 是否安装
+- 构建 Docker 镜像
+- 可选：直接运行容器（从 .env 文件读取环境变量）
 
 Dockerfile 多阶段构建：
 1. 阶段 1：构建前端（Node.js）
