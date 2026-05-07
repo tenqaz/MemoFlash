@@ -1,6 +1,8 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
 import httpx
@@ -40,10 +42,10 @@ async def get_tags():
         for tag in tags:
             tag_counts[tag] = tag_counts.get(tag, 0) + 1
 
-    return {"tags": [{"name": tag, "count": count} for tag, count in tag_counts.items()]}
+    return [{"id": tag, "name": tag, "count": count} for tag, count in tag_counts.items()]
 
-@app.get("/api/random-memo")
-async def get_random_memo(tags: str = None):
+@app.get("/api/memos/random")
+async def get_random_memo(tag_ids: str = None):
     memos_api_base = os.getenv("MEMOS_API_BASE")
     memos_token = os.getenv("MEMOS_TOKEN")
 
@@ -55,15 +57,24 @@ async def get_random_memo(tags: str = None):
         data = response.json()
         memos = data.get("memos", []) if isinstance(data, dict) else data
 
-    if tags:
-        tag_list = [t.strip() for t in tags.split(",")]
+    if tag_ids:
+        tag_list = [t.strip() for t in tag_ids.split(",")]
         memos = [m for m in memos if any(tag in m.get("tags", []) for tag in tag_list)]
 
     if not memos:
         return None
 
     import random
-    return random.choice(memos)
+    selected = random.choice(memos)
+
+    # Transform to frontend format
+    return {
+        "id": selected.get("name", "").split("/")[-1],
+        "content": selected.get("content", ""),
+        "created_at": selected.get("createTime", ""),
+        "tags": [{"id": tag, "name": tag} for tag in selected.get("tags", [])],
+        "comments": []
+    }
 
 @app.post("/api/memos/{uid}/comments")
 async def add_comment(uid: str, request: CommentRequest):
@@ -77,3 +88,14 @@ async def add_comment(uid: str, request: CommentRequest):
             json={"content": request.comment}
         )
         return response.json()
+
+# Static file serving
+static_dir = os.path.join(os.path.dirname(__file__), "..", "client", "dist")
+if os.path.exists(static_dir):
+    app.mount("/assets", StaticFiles(directory=os.path.join(static_dir, "assets")), name="assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        if full_path.startswith("api/"):
+            return {"error": "Not found"}
+        return FileResponse(os.path.join(static_dir, "index.html"))
