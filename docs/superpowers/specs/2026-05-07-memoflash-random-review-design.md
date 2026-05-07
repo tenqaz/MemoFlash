@@ -37,8 +37,7 @@ MemoFlash/
 │   ├── main.py              # FastAPI 入口 + 路由定义
 │   ├── db.py                # sqlite3 数据库读取逻辑
 │   ├── pyproject.toml       # uv 项目配置
-│   ├── uv.lock              # uv 锁文件
-│   └── Dockerfile           # 后端 Docker 镜像
+│   └── uv.lock              # uv 锁文件
 ├── client/
 │   ├── src/
 │   │   ├── App.jsx          # 主应用组件
@@ -49,9 +48,8 @@ MemoFlash/
 │   │   └── hooks/
 │   │       └── useSelectedTags.js  # 标签选择持久化 hook
 │   ├── vite.config.js
-│   ├── package.json
-│   └── Dockerfile           # 前端 Docker 镜像
-├── docker-compose.yml       # Docker Compose 配置
+│   └── package.json
+├── Dockerfile               # 单一 Docker 镜像（后端 + 前端静态文件）
 ├── .env.example             # 环境变量示例
 └── README.md
 ```
@@ -263,19 +261,24 @@ npm run build
 
 **Docker 部署：**
 ```bash
-# 使用 docker-compose
-docker-compose up -d
+# 构建镜像
+docker build -t memoflash .
 
-# 或单独构建
-docker build -t memoflash-backend ./backend
-docker build -t memoflash-frontend ./client
+# 运行容器
+docker run -d \
+  -p 8000:8000 \
+  -v ~/.memos/memos_prod.db:/app/memos_prod.db \
+  -e MEMOS_TOKEN=xxx \
+  -e MEMOS_USER=zhengwenfeng \
+  -e MEMOS_API_BASE=https://memos.zhengwenfeng.com \
+  -e DB_PATH=/app/memos_prod.db \
+  memoflash
 ```
 
-Docker Compose 配置：
-- 后端服务暴露 8000 端口
-- 前端 nginx 服务暴露 80 端口
-- 数据库文件通过 volume 挂载
-- 环境变量通过 .env 文件注入
+Dockerfile 多阶段构建：
+1. 阶段 1：构建前端（Node.js）
+2. 阶段 2：运行后端 + 托管前端静态文件（Python + uv）
+3. FastAPI 添加静态文件路由托管 `client/dist`
 
 ## 安全考虑
 
