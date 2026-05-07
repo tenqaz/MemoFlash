@@ -37,7 +37,8 @@ MemoFlash/
 │   ├── main.py              # FastAPI 入口 + 路由定义
 │   ├── db.py                # sqlite3 数据库读取逻辑
 │   ├── pyproject.toml       # uv 项目配置
-│   └── uv.lock              # uv 锁文件
+│   ├── uv.lock              # uv 锁文件
+│   └── Dockerfile           # 后端 Docker 镜像
 ├── client/
 │   ├── src/
 │   │   ├── App.jsx          # 主应用组件
@@ -48,7 +49,9 @@ MemoFlash/
 │   │   └── hooks/
 │   │       └── useSelectedTags.js  # 标签选择持久化 hook
 │   ├── vite.config.js
-│   └── package.json
+│   ├── package.json
+│   └── Dockerfile           # 前端 Docker 镜像
+├── docker-compose.yml       # Docker Compose 配置
 ├── .env.example             # 环境变量示例
 └── README.md
 ```
@@ -244,6 +247,7 @@ npm run dev
 
 ### 生产环境
 
+**直接部署：**
 ```bash
 # 后端
 cd backend
@@ -256,6 +260,22 @@ npm run build
 
 # 静态文件由 FastAPI 托管或使用 nginx
 ```
+
+**Docker 部署：**
+```bash
+# 使用 docker-compose
+docker-compose up -d
+
+# 或单独构建
+docker build -t memoflash-backend ./backend
+docker build -t memoflash-frontend ./client
+```
+
+Docker Compose 配置：
+- 后端服务暴露 8000 端口
+- 前端 nginx 服务暴露 80 端口
+- 数据库文件通过 volume 挂载
+- 环境变量通过 .env 文件注入
 
 ## 安全考虑
 
