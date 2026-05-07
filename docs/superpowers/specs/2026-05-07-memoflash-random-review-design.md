@@ -109,14 +109,38 @@ Response: {
 
 ### 后端实现逻辑
 
+**数据库 Schema：**
+```sql
+-- memo 表结构
+CREATE TABLE memo (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  uid TEXT NOT NULL UNIQUE,
+  creator_id INTEGER NOT NULL,
+  created_ts BIGINT NOT NULL,
+  updated_ts BIGINT NOT NULL,
+  row_status TEXT NOT NULL CHECK (row_status IN ('NORMAL', 'ARCHIVED')) DEFAULT 'NORMAL',
+  content TEXT NOT NULL DEFAULT '',
+  visibility TEXT NOT NULL CHECK (visibility IN ('PUBLIC', 'PROTECTED', 'PRIVATE')) DEFAULT 'PRIVATE',
+  payload TEXT NOT NULL DEFAULT '{}',  -- JSON 字段，包含标签等元数据
+  pinned INTEGER NOT NULL CHECK (pinned IN (0, 1)) DEFAULT 0
+);
+```
+
 **随机获取闪念流程：**
-1. 从 sqlite3 数据库 `memo` 表按标签筛选获取所有符合条件的 memo uid
-2. 随机选择一条 uid
-3. 调用 memos API `GET /api/v1/memos/{uid}` 获取完整详情
-4. 返回给前端
+1. 从 sqlite3 使用 SQL 直接随机取一条 uid（高效）：
+   ```sql
+   SELECT uid FROM memo 
+   WHERE row_status = 'NORMAL' 
+   AND json_extract(payload, '$.tags') LIKE '%tag1%'
+   ORDER BY RANDOM() 
+   LIMIT 1;
+   ```
+2. 调用 memos API `GET /api/v1/memos/{uid}` 获取完整详情
+3. 返回给前端
 
 **标签获取流程：**
 1. 调用 memos API `GET /api/v1/users/{username}:getStats`
+   - Header: `Authorization: Bearer {MEMOS_TOKEN}`
 2. 提取 `tagCount` 字段
 3. 返回给前端
 
@@ -124,6 +148,7 @@ Response: {
 1. 接收前端请求
 2. 构造请求体 `{"state": "NORMAL", "content": "...", "visibility": "PRIVATE"}`
 3. 转发到 memos API `POST /api/v1/memos/{uid}/comments`
+   - Header: `Authorization: Bearer {MEMOS_TOKEN}`
 4. 返回结果
 
 ## 数据流
@@ -285,16 +310,101 @@ docker run -d \
 - 可选：直接运行容器（从 .env 文件读取环境变量）
 
 Dockerfile 多阶段构建：
-1. 阶段 1：构建前端（Node.js）
-2. 阶段 2：运行后端 + 托管前端静态文件（Python + uv）
-3. FastAPI 添加静态文件路由托管 `client/dist`
+```dockerfile
+# 阶段 1: 构建前端
+FROM node:20-alpine AS frontend-builder
+WORKDIR /app/client
+COPY client/package*.json ./
+RUN npm install
+COPY client/ ./
+RUN npm run build
+
+# 阶段 2: 运行后端 + 托管前端
+FROM python:3.12-slim
+WORKDIR /app
+
+# 安装 uv
+RUN pip install uv
+
+# 复制后端代码
+COPY backend/pyproject.toml backend/uv.lock ./
+RUN uv sync --frozen
+
+COPY backend/ ./
+COPY --from=frontend-builder /app/client/dist ./client/dist
+
+# 创建非 root 用户
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD curl -f http://localhost:8000/api/tags || exit 1
+
+EXPOSE 8000
+CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
 
 ## 安全考虑
 
 1. **Token 保护**：memos API token 仅存储在服务端环境变量，不暴露给前端
-2. **CORS 配置**：FastAPI 配置允许前端域名跨域请求
-3. **输入验证**：后端验证标签参数，防止 SQL 注入
+2. **CORS 配置**：FastAPI 配置 CORS 中间件
+   ```python
+   from fastapi.middleware.cors import CORSMiddleware
+   
+   app.add_middleware(
+       CORSMiddleware,
+       allow_origins=["http://localhost:5173"],  # 开发环境
+       allow_credentials=True,
+       allow_methods=["*"],
+       allow_headers=["*"],
+   )
+   ```
+3. **输入验证**：使用 Pydantic 模型验证请求参数
 4. **评论可见性**：默认 PRIVATE，仅用户自己可见
+
+## 技术实现细节
+
+### FastAPI 关键配置
+
+**静态文件托管：**
+```python
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+app.mount("/assets", StaticFiles(directory="client/dist/assets"), name="assets")
+
+@app.get("/{full_path:path}")
+async def serve_spa(full_path: str):
+    if not full_path.startswith("api/"):
+        return FileResponse("client/dist/index.html")
+```
+
+**Pydantic 模型：**
+```python
+from pydantic import BaseModel
+
+class CommentRequest(BaseModel):
+    content: str
+
+class MemoResponse(BaseModel):
+    uid: str
+    content: str
+    createTime: str
+    tags: list[str]
+    attachments: list[dict]
+    relations: list[dict]
+```
+
+### React 关键配置
+
+**Toast 提示库**：使用 `react-hot-toast`
+
+**状态管理**：
+- `useState` - 标签选择、闪念数据
+- `useEffect` - 数据加载
+- `useCallback` - 事件处理优化
+- 自定义 hook `useSelectedTags` - localStorage 持久化
 
 ## 未来扩展
 
