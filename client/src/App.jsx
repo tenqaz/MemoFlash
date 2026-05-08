@@ -8,13 +8,18 @@ import CommentBox from './components/CommentBox'
 
 export default function App() {
   const { selectedTags, toggleTag } = useSelectedTags()
-  const [tags, setTags] = useState([])
+  const [tags, setTags] = useState({})
   const [currentMemo, setCurrentMemo] = useState(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     fetchTags()
   }, [])
+
+  const handleToggleTag = (tag) => {
+    toggleTag(tag)
+    fetchRandomMemo()
+  }
 
   const fetchTags = async () => {
     try {
@@ -49,7 +54,7 @@ export default function App() {
   const handleCommentSubmit = async (content) => {
     if (!currentMemo) return
 
-    const response = await fetch(`/api/memos/${currentMemo.id}/comments`, {
+    const response = await fetch(`/api/memos/${currentMemo.uid}/comments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content })
@@ -61,10 +66,10 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 py-8">
+    <div className="min-h-screen py-8 px-8" style={{ backgroundColor: '#f0f9ff' }}>
       <Toaster position="top-center" />
 
-      <div className="max-w-4xl mx-auto px-4 space-y-6">
+      <div className="mx-auto space-y-6" style={{ width: '800px' }}>
         <header className="text-center">
           <h1 className="text-3xl font-bold text-gray-800">闪念复习</h1>
         </header>
@@ -72,23 +77,17 @@ export default function App() {
         <TagFilter
           tags={tags}
           selectedTags={selectedTags}
-          onTagChange={(newTags) => {
-            newTags.forEach(tag => {
-              if (!selectedTags.includes(tag)) toggleTag(tag)
-            })
-            selectedTags.forEach(tag => {
-              if (!newTags.includes(tag)) toggleTag(tag)
-            })
-          }}
+          onToggleTag={handleToggleTag}
         />
 
         <div className="text-center">
           <button
             onClick={fetchRandomMemo}
             disabled={loading}
-            className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-lg font-semibold"
+            className="px-4 py-2 text-white rounded-md hover:opacity-90 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm font-medium"
+            style={{ backgroundColor: '#0ea5e9' }}
           >
-            {loading ? '加载中...' : '获取随机闪念'}
+            {loading ? '加载中...' : '下一条随机闪念'}
           </button>
         </div>
 

@@ -1,8 +1,20 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 export default function TagFilter({ tags, selectedTags, onToggleTag }) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const containerRef = useRef(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
+        setIsExpanded(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const filteredTags = Object.keys(tags).filter(tag =>
     tag.toLowerCase().includes(searchTerm.toLowerCase())
@@ -18,7 +30,7 @@ export default function TagFilter({ tags, selectedTags, onToggleTag }) {
   })
 
   return (
-    <div className="bg-white rounded-xl p-4 shadow-sm">
+    <div ref={containerRef} className="bg-white rounded-xl p-4 shadow-sm">
       <div
         className="flex items-center justify-between mb-3 cursor-pointer"
         onClick={() => setIsExpanded(!isExpanded)}
