@@ -15,7 +15,7 @@ RUN pip install uv
 
 # Copy backend files
 COPY backend/pyproject.toml backend/uv.lock ./
-RUN uv sync --frozen
+RUN uv sync --frozen --no-install-project
 
 # Copy backend source
 COPY backend/ ./

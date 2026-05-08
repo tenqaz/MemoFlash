@@ -1,0 +1,8 @@
+.env
+.venv
+node_modules
+__pycache__
+uv.lock
+.playwright-mcp
+.data
+dist

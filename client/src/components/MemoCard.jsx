@@ -42,14 +42,27 @@ export default function MemoCard({ memo }) {
           </div>
         )}
 
-        {memo.relations && memo.relations.length > 0 && (
+        {memo.comments && memo.comments.length > 0 && (
           <>
             <div className="border-t border-gray-200"></div>
             <div className="text-sm font-medium text-gray-600">历史评论</div>
-            {memo.relations.map(relation => (
-              <div key={relation.relatedMemo} className="space-y-1">
-                <div className="text-xs text-gray-500">{formatTime(relation.memo.createTime)}</div>
-                <MarkdownContent content={relation.memo.content} />
+            {memo.comments.map(comment => (
+              <div key={comment.name} className="space-y-1">
+                <div className="text-xs text-gray-500">{formatTime(comment.createTime)}</div>
+                <MarkdownContent content={comment.content} />
+              </div>
+            ))}
+          </>
+        )}
+
+        {memo.references && memo.references.length > 0 && (
+          <>
+            <div className="border-t border-gray-200"></div>
+            <div className="text-sm font-medium text-gray-600">相关引用</div>
+            {memo.references.map(ref => (
+              <div key={ref.name} className="space-y-1">
+                <div className="text-xs text-gray-500">{formatTime(ref.createTime)}</div>
+                <MarkdownContent content={ref.content} />
               </div>
             ))}
           </>

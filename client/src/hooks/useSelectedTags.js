@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const STORAGE_KEY = 'selectedTags';
+const STORAGE_KEY = 'memoflash_selected_tags';
 
 export function useSelectedTags() {
   const [selectedTags, setSelectedTags] = useState(() => {

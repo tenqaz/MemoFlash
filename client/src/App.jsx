@@ -16,9 +16,12 @@ export default function App() {
     fetchTags()
   }, [])
 
+  useEffect(() => {
+    fetchRandomMemo()
+  }, [selectedTags])
+
   const handleToggleTag = (tag) => {
     toggleTag(tag)
-    fetchRandomMemo()
   }
 
   const fetchTags = async () => {
