@@ -3,7 +3,6 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
 from dotenv import load_dotenv
 import httpx
 from db import get_random_memo_uid
@@ -23,9 +22,6 @@ app.add_middleware(
 MEMOS_TOKEN = os.getenv("MEMOS_TOKEN")
 MEMOS_USER = os.getenv("MEMOS_USER")
 MEMOS_API_BASE = os.getenv("MEMOS_API_BASE")
-
-class CommentRequest(BaseModel):
-    content: str
 
 @app.get("/api/tags")
 async def get_tags():
@@ -58,46 +54,21 @@ async def get_random_memo(tag_ids: str = None):
 
         memo_data = response.json()
 
-        # 获取评论和引用的完整信息
+        # 获取引用的完整信息
         if memo_data.get("relations"):
-            comments = []
             references = []
 
             for relation in memo_data["relations"]:
-                if relation["type"] == "COMMENT":
-                    comment_id = relation["memo"]["name"].split("/")[-1]
-                    comment_url = f"{MEMOS_API_BASE}/api/v1/memos/{comment_id}"
-                    comment_response = await client.get(comment_url, headers=headers)
-                    if comment_response.status_code == 200:
-                        comments.append(comment_response.json())
-                elif relation["type"] == "REFERENCE":
+                if relation["type"] == "REFERENCE":
                     ref_id = relation["memo"]["name"].split("/")[-1]
                     ref_url = f"{MEMOS_API_BASE}/api/v1/memos/{ref_id}"
                     ref_response = await client.get(ref_url, headers=headers)
                     if ref_response.status_code == 200:
                         references.append(ref_response.json())
 
-            memo_data["comments"] = comments
             memo_data["references"] = references
 
         return memo_data
-
-@app.post("/api/memos/{uid}/comments")
-async def add_comment(uid: str, request: CommentRequest):
-    url = f"{MEMOS_API_BASE}/api/v1/memos/{uid}/comments"
-    headers = {"Authorization": f"Bearer {MEMOS_TOKEN}"}
-    body = {
-        "state": "NORMAL",
-        "content": request.content,
-        "visibility": "PRIVATE"
-    }
-
-    async with httpx.AsyncClient() as client:
-        response = await client.post(url, headers=headers, json=body)
-        if response.status_code != 200:
-            raise HTTPException(status_code=502, detail="Failed to create comment")
-
-        return response.json()
 
 # Static file serving
 static_dir = os.path.join(os.path.dirname(__file__), "static")

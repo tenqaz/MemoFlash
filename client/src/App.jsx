@@ -4,7 +4,6 @@ import toast from 'react-hot-toast'
 import { useSelectedTags } from './hooks/useSelectedTags'
 import TagFilter from './components/TagFilter'
 import MemoCard from './components/MemoCard'
-import CommentBox from './components/CommentBox'
 
 export default function App() {
   const { selectedTags, toggleTag } = useSelectedTags()
@@ -54,19 +53,6 @@ export default function App() {
     }
   }
 
-  const handleCommentSubmit = async (content) => {
-    if (!currentMemo) return
-
-    const response = await fetch(`/api/memos/${currentMemo.uid}/comments`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content })
-    })
-
-    if (!response.ok) throw new Error('提交评论失败')
-
-    await fetchRandomMemo()
-  }
 
   return (
     <div className="min-h-screen py-8 px-8" style={{ backgroundColor: '#f0f9ff' }}>
@@ -94,12 +80,7 @@ export default function App() {
           </button>
         </div>
 
-        {currentMemo && (
-          <>
-            <MemoCard memo={currentMemo} />
-            <CommentBox onSubmit={handleCommentSubmit} />
-          </>
-        )}
+        {currentMemo && <MemoCard memo={currentMemo} />}
       </div>
     </div>
   )

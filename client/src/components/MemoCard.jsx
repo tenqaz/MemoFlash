@@ -42,19 +42,6 @@ export default function MemoCard({ memo }) {
           </div>
         )}
 
-        {memo.comments && memo.comments.length > 0 && (
-          <>
-            <div className="border-t border-gray-200"></div>
-            <div className="text-sm font-medium text-gray-600">历史评论</div>
-            {memo.comments.map(comment => (
-              <div key={comment.name} className="space-y-1">
-                <div className="text-xs text-gray-500">{formatTime(comment.createTime)}</div>
-                <MarkdownContent content={comment.content} />
-              </div>
-            ))}
-          </>
-        )}
-
         {memo.references && memo.references.length > 0 && (
           <>
             <div className="border-t border-gray-200"></div>
