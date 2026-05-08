@@ -10,22 +10,26 @@ export default function TagFilter({ tags, selectedTags, onToggleTag }) {
 
   return (
     <div className="bg-white rounded-xl p-4 shadow-sm">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
+      <div
+        className="flex items-center justify-between mb-3 cursor-pointer"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xl">🏷️</span>
           <span className="text-base font-semibold">标签筛选</span>
           {!isExpanded && selectedTags.length > 0 && (
-            <span className="text-sm text-gray-500">
-              ：{selectedTags.join(', ')}
-            </span>
+            <div className="flex gap-2 flex-wrap">
+              {selectedTags.map(tag => (
+                <span key={tag} className="px-2 py-0.5 bg-sky-100 text-sky-700 rounded-full text-xs">
+                  {tag}
+                </span>
+              ))}
+            </div>
           )}
         </div>
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="px-2 py-1 bg-sky-100 rounded-md text-sm"
-        >
-          {isExpanded ? '收起' : '展开'}
-        </button>
+        <span className="text-sm text-gray-500">
+          {isExpanded ? '▲' : '▼'}
+        </span>
       </div>
 
       {isExpanded && (
