@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Toaster } from 'react-hot-toast'
 import toast from 'react-hot-toast'
 import { useSelectedTags } from './hooks/useSelectedTags'
@@ -11,30 +11,22 @@ export default function App() {
   const [currentMemo, setCurrentMemo] = useState(null)
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    fetchTags()
-  }, [])
-
-  useEffect(() => {
-    fetchRandomMemo()
-  }, [selectedTags])
-
-  const handleToggleTag = (tag) => {
-    toggleTag(tag)
-  }
-
-  const fetchTags = async () => {
+  const fetchTags = useCallback(async () => {
     try {
       const response = await fetch('/api/tags')
-      if (!response.ok) throw new Error('获取标签失败')
+      if (!response.ok) {
+        throw new Error(`获取标签失败 (${response.status})`)
+      }
       const data = await response.json()
       setTags(data)
     } catch (error) {
-      toast.error(error.message)
+      console.error('fetchTags error:', error)
+      toast.error(error.message || '网络错误，请稍后重试')
+      setTags({})
     }
-  }
+  }, [])
 
-  const fetchRandomMemo = async () => {
+  const fetchRandomMemo = useCallback(async () => {
     setLoading(true)
     try {
       const url = selectedTags.length > 0
@@ -42,16 +34,40 @@ export default function App() {
         : '/api/memos/random'
 
       const response = await fetch(url)
-      if (!response.ok) throw new Error('获取闪念失败')
+      if (!response.ok) {
+        throw new Error(`获取闪念失败 (${response.status})`)
+      }
       const data = await response.json()
-      setCurrentMemo(data)
+
+      if (!data || Object.keys(data).length === 0) {
+        toast.error('没有找到符合条件的闪念')
+        setCurrentMemo(null)
+      } else {
+        setCurrentMemo(data)
+      }
     } catch (error) {
-      toast.error(error.message)
+      console.error('fetchRandomMemo error:', error)
+      toast.error(error.message || '网络错误，请稍后重试')
       setCurrentMemo(null)
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedTags])
+
+  useEffect(() => {
+    fetchTags()
+  }, [fetchTags])
+
+  useEffect(() => {
+    let cancelled = false
+    const fetch = async () => {
+      await fetchRandomMemo()
+    }
+    if (!cancelled) {
+      fetch()
+    }
+    return () => { cancelled = true }
+  }, [fetchRandomMemo])
 
 
   return (
@@ -66,7 +82,7 @@ export default function App() {
         <TagFilter
           tags={tags}
           selectedTags={selectedTags}
-          onToggleTag={handleToggleTag}
+          onToggleTag={toggleTag}
         />
 
         <div className="text-center">

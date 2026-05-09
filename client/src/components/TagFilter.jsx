@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 
 export default function TagFilter({ tags, selectedTags, onToggleTag }) {
   const [isExpanded, setIsExpanded] = useState(false)
@@ -16,18 +16,14 @@ export default function TagFilter({ tags, selectedTags, onToggleTag }) {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const filteredTags = Object.keys(tags).filter(tag =>
-    tag.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
-  // 已选标签排在前面
-  const sortedTags = [...filteredTags].sort((a, b) => {
-    const aSelected = selectedTags.includes(a)
-    const bSelected = selectedTags.includes(b)
-    if (aSelected && !bSelected) return -1
-    if (!aSelected && bSelected) return 1
-    return 0
-  })
+  const sortedTags = useMemo(() => {
+    const filtered = Object.keys(tags).filter(tag =>
+      tag.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    return filtered.sort((a, b) => {
+      return selectedTags.includes(b) - selectedTags.includes(a)
+    })
+  }, [tags, searchTerm, selectedTags])
 
   return (
     <div ref={containerRef} className="bg-white rounded-xl p-4 shadow-sm">
@@ -64,18 +60,22 @@ export default function TagFilter({ tags, selectedTags, onToggleTag }) {
             className="w-full px-3 py-2 border border-gray-300 rounded-md mb-3 text-sm"
           />
           <div className="space-y-2 max-h-60 overflow-y-auto">
-            {sortedTags.map(tag => (
-              <label key={tag} className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={selectedTags.includes(tag)}
-                  onChange={() => onToggleTag(tag)}
-                  className="w-4 h-4 rounded border-sky-500 text-sky-500"
-                />
-                <span className="text-sm">{tag}</span>
-                <span className="text-xs text-gray-500">({tags[tag]})</span>
-              </label>
-            ))}
+            {sortedTags.length === 0 ? (
+              <div className="text-sm text-gray-500 text-center py-2">未找到匹配标签</div>
+            ) : (
+              sortedTags.map(tag => (
+                <label key={tag} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedTags.includes(tag)}
+                    onChange={() => onToggleTag(tag)}
+                    className="w-4 h-4 rounded border-sky-500 text-sky-500"
+                  />
+                  <span className="text-sm">{tag}</span>
+                  <span className="text-xs text-gray-500">({tags[tag]})</span>
+                </label>
+              ))
+            )}
           </div>
         </>
       )}

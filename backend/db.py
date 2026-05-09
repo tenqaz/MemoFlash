@@ -8,22 +8,27 @@ def get_db_path():
 
 def get_random_memo_uid(tags: list[str] | None = None) -> str | None:
     db_path = get_db_path()
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
 
-    query = "SELECT uid FROM memo WHERE row_status = 'NORMAL'"
+        query = "SELECT uid FROM memo WHERE row_status = 'NORMAL'"
+        params = []
 
-    if tags:
-        tag_conditions = " AND ".join(
-            f"json_extract(payload, '$.tags') LIKE '%{tag}%'"
-            for tag in tags
-        )
-        query += f" AND ({tag_conditions})"
+        if tags:
+            tag_conditions = []
+            for tag in tags:
+                tag_conditions.append("json_extract(payload, '$.tags') LIKE ?")
+                params.append(f'%{tag}%')
+            query += f" AND ({' AND '.join(tag_conditions)})"
 
-    query += " ORDER BY RANDOM() LIMIT 1"
+        query += " ORDER BY RANDOM() LIMIT 1"
 
-    cursor.execute(query)
-    result = cursor.fetchone()
-    conn.close()
-
-    return result[0] if result else None
+        cursor.execute(query, params)
+        result = cursor.fetchone()
+        return result[0] if result else None
+    except sqlite3.Error as e:
+        raise
+    finally:
+        if conn:
+            conn.close()

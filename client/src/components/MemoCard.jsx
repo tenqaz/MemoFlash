@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import MarkdownContent from './MarkdownContent'
 
 export default function MemoCard({ memo }) {
@@ -11,6 +12,15 @@ export default function MemoCard({ memo }) {
 
   const formatTime = (timeStr) => {
     return new Date(timeStr).toLocaleString('zh-CN')
+  }
+
+  const isValidImageUrl = (url) => {
+    try {
+      const parsed = new URL(url)
+      return ['http:', 'https:'].includes(parsed.protocol)
+    } catch {
+      return false
+    }
   }
 
   return (
@@ -31,14 +41,18 @@ export default function MemoCard({ memo }) {
 
         {memo.attachments && memo.attachments.length > 0 && (
           <div className="flex gap-2 flex-wrap">
-            {memo.attachments.map(attachment => (
-              <img
-                key={attachment.name}
-                src={attachment.externalLink}
-                alt=""
-                className="w-32 h-32 object-cover rounded-lg"
-              />
-            ))}
+            {memo.attachments
+              .filter(attachment => isValidImageUrl(attachment.externalLink))
+              .map(attachment => (
+                <img
+                  key={attachment.name}
+                  src={attachment.externalLink}
+                  alt={attachment.name || '附件图片'}
+                  className="w-32 h-32 object-cover rounded-lg"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => { e.target.style.display = 'none' }}
+                />
+              ))}
           </div>
         )}
 
