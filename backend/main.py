@@ -3,7 +3,6 @@ import re
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 from dotenv import load_dotenv
 import httpx
 from db import get_random_memo_uid
@@ -91,13 +90,4 @@ async def get_random_memo(tag_ids: str = Query(None, max_length=500)):
 
         return memo_data
 
-# Static file serving
-static_dir = os.path.join(os.path.dirname(__file__), "static")
-if os.path.exists(static_dir):
-    app.mount("/assets", StaticFiles(directory=os.path.join(static_dir, "assets")), name="assets")
-
-    @app.get("/{full_path:path}")
-    async def serve_spa(full_path: str):
-        if full_path.startswith("api/"):
-            return {"error": "Not found"}
-        return FileResponse(os.path.join(static_dir, "index.html"))
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
