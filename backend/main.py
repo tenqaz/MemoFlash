@@ -1,5 +1,4 @@
 import os
-import re
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -54,10 +53,6 @@ async def get_random_memo(tag_ids: str = Query(None, max_length=500)):
     tag_list = None
     if tag_ids:
         tag_list = [tag.strip() for tag in tag_ids.split(",") if tag.strip()]
-        for tag in tag_list:
-            if not re.match(r'^[\w一-鿿-]+$', tag):
-                raise HTTPException(status_code=400, detail="Invalid tag format")
-        tag_list = tag_list if tag_list else None
 
     uid = get_random_memo_uid(tag_list)
 
