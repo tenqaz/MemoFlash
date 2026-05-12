@@ -90,4 +90,7 @@ async def get_random_memo(tag_ids: str = Query(None, max_length=500)):
 
         return memo_data
 
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+# Static file serving
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+if os.path.exists(static_dir):
+    app.mount("/", StaticFiles(directory="static", html=True), name="static")

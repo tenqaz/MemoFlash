@@ -1,6 +1,11 @@
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 
+marked.setOptions({
+  breaks: true,
+  gfm: true
+})
+
 export default function MarkdownContent({ content }) {
   if (!content || typeof content !== 'string') return null
 
@@ -8,7 +13,7 @@ export default function MarkdownContent({ content }) {
     const html = DOMPurify.sanitize(marked.parse(content))
     return (
       <div
-        className="text-sm leading-relaxed"
+        className="text-sm leading-relaxed prose prose-sm max-w-none prose-a:text-blue-600 prose-a:underline"
         dangerouslySetInnerHTML={{ __html: html }}
       />
     )

@@ -6,7 +6,7 @@ import TagFilter from './components/TagFilter'
 import MemoCard from './components/MemoCard'
 
 export default function App() {
-  const { selectedTags, toggleTag } = useSelectedTags()
+  const { selectedTags, setSelectTag } = useSelectedTags()
   const [tags, setTags] = useState({})
   const [currentMemo, setCurrentMemo] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -56,7 +56,7 @@ export default function App() {
 
   useEffect(() => {
     fetchTags()
-  }, [fetchTags])
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -82,7 +82,7 @@ export default function App() {
         <TagFilter
           tags={tags}
           selectedTags={selectedTags}
-          onToggleTag={toggleTag}
+          onToggleTag={setSelectTag}
         />
 
         <div className="text-center">
